@@ -1,0 +1,71 @@
+/* Existing styles remain unchanged */
+
+.App {
+  background-color: #12e3ff; /* Light blue background color for the entire app */
+  min-height: 100vh;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #12e3ff;
+  height: 100%;
+}
+
+/* Added styles for overlay layering */
+.scene-nav-info {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.graph-container {
+  position: relative;
+  margin-right: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+button {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #0056b3;
+  cursor: pointer;
+}
+
+.disease-card {
+  border: 1px solid var(--border-color);
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 8px;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.disease-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .App {
+    padding: 1rem;
+  }
+
+  input {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 1rem;
+  }
+}

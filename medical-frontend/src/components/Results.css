@@ -1,0 +1,19 @@
+.results-container {
+  margin: 20px auto;
+  padding: 15px;
+  max-width: 800px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.results-container section {
+  margin-bottom: 20px;
+  padding: 10px;
+}
+
+.results-container h2 {
+  margin-bottom: 10px;
+  font-size: 1.5rem;
+  color: #333;
+}
