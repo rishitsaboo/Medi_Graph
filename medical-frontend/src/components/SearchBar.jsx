@@ -15,7 +15,7 @@ const SearchBar = ({ onSearch }) => {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search diseases, symptoms, or drugs..."
+          placeholder="Search Diseases"
           className="search-input"
         />
         <button type="submit" className="search-button">

@@ -3,6 +3,7 @@ import axios from "axios";
 import SearchBar from "./components/SearchBar";
 import DiseaseCard from "./components/DiseaseCard";
 import "./components/Results.css";
+import "./App.css"; // Added import for App.css
 
 function App() {
   const [results, setResults] = useState({

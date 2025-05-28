@@ -1,14 +1,15 @@
 /* Existing styles remain unchanged */
 
 .App {
-  background-color: #12e3ff; /* Light blue background color for the entire app */
+  background-color: aqua !important; /* Force background color */
   min-height: 100vh;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
-  background-color: #12e3ff;
+  background-color: aqua !important;
   height: 100%;
 }
 
