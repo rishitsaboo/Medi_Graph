@@ -21,7 +21,7 @@ app = FastAPI(title="Medical Graph API")
 # Enable CORS (Cross-Origin Resource Sharing)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3001"],  # Allows all origins
+    allow_origins=["http://localhost:3000"],  # Allows all origins
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
@@ -57,105 +57,73 @@ async def get_disease(disease_name: str):
 # Search endpoint
 @app.get("/api/search", response_model=SearchResult)
 async def search(query: str):
-    with db.get_session() as session:
-        # Enhanced query: fetch full disease info if the match is a Disease
-        result = session.run("""
-        MATCH (n)
-        WHERE toLower(n.name) CONTAINS toLower($query)
-        WITH n, labels(n)[0] AS type
-        OPTIONAL MATCH (n)-[:HAS_SYMPTOM]->(s:Symptom)
-        OPTIONAL MATCH (n)-[:TREATED_WITH]->(dr:Drug)
-        RETURN n, type, collect(DISTINCT s) AS symptoms, collect(DISTINCT dr) AS drugs
-        """, {"query": query})
-        
-        diseases = []
-        symptoms = []
-        drugs = []
+    try:
+        with db.get_session() as session:
+            # 1. Diseases matched by name
+            direct_result = session.run("""
+            MATCH (d:Disease)
+            WHERE toLower(d.name) CONTAINS toLower($query)
+            OPTIONAL MATCH (d)-[:HAS_SYMPTOM]->(s:Symptom)
+            OPTIONAL MATCH (d)-[:TREATED_WITH]->(dr:Drug)
+            RETURN d, collect(DISTINCT s) AS symptoms, collect(DISTINCT dr) AS drugs
+            """, {"query": query})
 
-        for record in result:
-            node = record["n"]
-            node_type = record["type"]
-            node_props = node._properties
+            # 2. Diseases connected to symptoms matching query
+            symptom_result = session.run("""
+            MATCH (s:Symptom)
+            WHERE toLower(s.name) CONTAINS toLower($query)
+            MATCH (d:Disease)-[:HAS_SYMPTOM]->(s)
+            OPTIONAL MATCH (d)-[:HAS_SYMPTOM]->(s2:Symptom)
+            OPTIONAL MATCH (d)-[:TREATED_WITH]->(dr:Drug)
+            RETURN DISTINCT d, collect(DISTINCT s2) AS symptoms, collect(DISTINCT dr) AS drugs
+            """, {"query": query})
 
-            if node_type == "Disease":
-                disease_symptoms = [Symptom(**s._properties) for s in record["symptoms"] if s]
-                disease_drugs = [Drug(**dr._properties) for dr in record["drugs"] if dr]
+            disease_map = {}
+            all_symptoms = {}
+            all_drugs = {}
 
-                diseases.append(Disease(
-                    name=node_props["name"],
-                    type=node_props.get("type"),
-                    symptoms=disease_symptoms,
-                    drugs=disease_drugs
-                ))
+            def process_record(record):
+                d = record["d"]
+                disease_name = d["name"]
+                symptoms = [Symptom(**s._properties) for s in record["symptoms"] if s]
+                drugs = [Drug(**dr._properties) for dr in record["drugs"] if dr]
 
-                symptoms.extend(disease_symptoms)
-                drugs.extend(disease_drugs)
+                if disease_name not in disease_map:
+                    disease_map[disease_name] = Disease(
+                        name=disease_name,
+                        type=d.get("type"),
+                        symptoms=symptoms,
+                        drugs=drugs
+                    )
+                else:
+                    # avoid duplicates: extend only unique items
+                    disease = disease_map[disease_name]
+                    existing_symptom_names = {s.name for s in disease.symptoms}
+                    existing_drug_names = {dr.name for dr in disease.drugs}
+                    disease.symptoms.extend([s for s in symptoms if s.name not in existing_symptom_names])
+                    disease.drugs.extend([dr for dr in drugs if dr.name not in existing_drug_names])
 
-            elif node_type == "Symptom":
-                symptoms.append(Symptom(
-                    name=node_props["name"],
-                    severity=node_props.get("severity")
-                ))
-            elif node_type == "Drug":
-                drugs.append(Drug(
-                    name=node_props["name"],
-                    type=node_props.get("type"),
-                    dosage=node_props.get("dosage")
-                ))
+                for s in symptoms:
+                    all_symptoms[s.name] = s
+                for dr in drugs:
+                    all_drugs[dr.name] = dr
 
-        return SearchResult(
-            query=query,
-            diseases=diseases,
-            symptoms=symptoms,
-            drugs=drugs
-        )
+            for record in direct_result:
+                process_record(record)
 
-@app.get("/api/graph")
-async def get_graph(query: str = ""):
-    with db.get_session() as session:
-        if query:
-            cypher_query = """
-            MATCH (n)-[r]->(m)
-            WHERE toLower(n.name) CONTAINS toLower($query) OR toLower(m.name) CONTAINS toLower($query)
-            RETURN collect(DISTINCT n) AS nodes, collect(DISTINCT r) AS relationships, collect(DISTINCT m) AS nodes2
-            """
-            result = session.run(cypher_query, {"query": query})
-        else:
-            cypher_query = """
-            MATCH (n)-[r]->(m)
-            RETURN collect(DISTINCT n) AS nodes, collect(DISTINCT r) AS relationships, collect(DISTINCT m) AS nodes2
-            """
-            result = session.run(cypher_query)
+            for record in symptom_result:
+                process_record(record)
 
-        record = result.single()
-        nodes = record["nodes"] + record["nodes2"]
-        relationships = record["relationships"]
+            return SearchResult(
+                query=query,
+                diseases=list(disease_map.values()),
+                symptoms=list(all_symptoms.values()),
+                drugs=list(all_drugs.values())
+            )
 
-        # Prepare nodes list with unique nodes
-        unique_nodes = {}
-        for node in nodes:
-            unique_nodes[node.id] = {
-                "id": node.id,
-                "labels": list(node.labels),
-                "properties": dict(node._properties)
-            }
-
-        # Prepare relationships list
-        rels = []
-        for rel in relationships:
-            rels.append({
-                "id": rel.id,
-                "type": rel.type,
-                "startNode": rel.start_node.id,
-                "endNode": rel.end_node.id,
-                "properties": dict(rel._properties)
-            })
-
-        return {
-            "nodes": list(unique_nodes.values()),
-            "relationships": rels
-        }
-
+    except Exception as e:
+        logging.exception("Search failed")
+        raise HTTPException(status_code=500, detail=str(e))
 # Run the application
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "./SearchBar.css";
 
-const SearchBar = ({ onSearch }) => {
+const SearchBar = ({ onSearch, placeholder }) => {
   const [query, setQuery] = useState("");
 
   const handleSearch = (e) => {
@@ -15,7 +15,7 @@ const SearchBar = ({ onSearch }) => {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search Diseases"
+          placeholder={placeholder || "Search Diseases"}
           className="search-input"
         />
         <button type="submit" className="search-button">

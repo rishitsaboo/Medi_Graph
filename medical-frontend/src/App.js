@@ -1,11 +1,17 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import axios from "axios";
-import SearchBar from "./components/SearchBar";
+import Home from "./components/home";
 import DiseaseCard from "./components/DiseaseCard";
+import SearchBar from "./components/SearchBar";
+import SymptomSearch from "./SymptomSearch";
 import "./components/Results.css";
-import "./App.css"; // Added import for App.css
+import "./App.css";
 
-function App() {
+import { useNavigate } from "react-router-dom";
+
+function DiseaseSearch() {
+  const navigate = useNavigate();
   const [results, setResults] = useState({
     diseases: [],
     symptoms: [],
@@ -18,7 +24,7 @@ function App() {
         `http://localhost:8000/api/search?query=${query}`,
       );
       const data = response.data;
-      console.log("Search response data:", data); // Added for debugging
+      console.log("Search response data:", data);
       setResults({
         diseases: data.diseases || [],
         symptoms: data.symptoms || [],
@@ -32,7 +38,7 @@ function App() {
 
   return (
     <div className="App">
-      <SearchBar onSearch={handleSearch} />
+      <SearchBar onSearch={handleSearch} placeholder="Search Diseases" />
       <div className="results-container" id="diseases">
         <section>
           <h2>Diseases</h2>
@@ -57,7 +63,26 @@ function App() {
           )}
         </section>
       </div>
+      <button
+        onClick={() => navigate("/")}
+        className="go-back-button"
+        style={{ display: "block", margin: "20px auto" }}
+      >
+        Go Back
+      </button>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/disease-search" element={<DiseaseSearch />} />
+        <Route path="/symptom-search" element={<SymptomSearch />} />
+      </Routes>
+    </Router>
   );
 }
 
