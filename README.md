@@ -1,7 +1,17 @@
 # MediGraph Project
 
 ## Overview
-MediGraph is a medical knowledge graph that reveals hidden relationships between diseases, symptoms, drugs, and genetic factors. Built on Neo4j, it transforms scattered medical data into an interactive web of connected insights—helping doctors explore diagnoses, researchers uncover patterns, and patients understand conditions.
+Medical data is complex—drugs, diseases, and symptoms are interconnected, but this information is often buried in textbooks or scattered across databases. I created Medi_Graph, a smart healthcare system that helps organize and understand medical information using a knowledge graph. The idea was to make it easier to get quick medical insights like which symptoms relate to this disease and what drugs used to treat it.
+How it works:
+•	Built a knowledge graph (using Neo4j) to store these relationships (e.g., "Aspirin → treats → Fever").
+•	Used NLP to extract medical terms.
+•	Added a React dashboard to visualize connections and a Flask API to query them programmatically.
+Tech used:
+•	Python + Flask (backend API)
+•	Neo4j (graph database for relationships)
+•	React.js (user-friendly interface)
+•	NLP (to analyze medical texts)
+
 
 This project consists of two main parts:
 - **Frontend:** A React-based web application for interacting with the knowledge graph.
